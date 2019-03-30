@@ -8,14 +8,16 @@ import os
 import socket
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 from Ui_ClassifyForm import Ui_ClassifyForm
 
 class ClassifyWindow(QWidget, Ui_ClassifyForm):
     def __init__(self, parent=None):
         super(ClassifyWindow, self).__init__(parent)
         self.setupUi(self)
+        self.setWindowFlags(Qt.Qt.CustomizeWindowHint)
         self.classifyBtn.clicked.connect(self.do_classify)
+        self.closeBtn.clicked.connect(self.do_close)
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
         self.resultLabel.setText("Res:")
@@ -54,6 +56,8 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
 
         return result[0]
 
+    def do_close(self):
+        os.system("echo '123456' | sudo -S shutdown -h 0")
 
 
 

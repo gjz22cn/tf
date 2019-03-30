@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>450</width>
-    <height>250</height>
+    <height>270</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <rect>
      <x>350</x>
      <y>10</y>
-     <width>75</width>
+     <width>80</width>
      <height>30</height>
     </rect>
    </property>
@@ -31,7 +31,7 @@
     <rect>
      <x>350</x>
      <y>80</y>
-     <width>75</width>
+     <width>80</width>
      <height>30</height>
     </rect>
    </property>
@@ -44,7 +44,7 @@
     <rect>
      <x>350</x>
      <y>120</y>
-     <width>75</width>
+     <width>80</width>
      <height>30</height>
     </rect>
    </property>
@@ -57,7 +57,7 @@
     <rect>
      <x>350</x>
      <y>160</y>
-     <width>75</width>
+     <width>80</width>
      <height>30</height>
     </rect>
    </property>
@@ -70,7 +70,7 @@
     <rect>
      <x>350</x>
      <y>200</y>
-     <width>75</width>
+     <width>80</width>
      <height>30</height>
     </rect>
    </property>
@@ -83,8 +83,8 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>300</width>
-     <height>225</height>
+     <width>320</width>
+     <height>240</height>
     </rect>
    </property>
    <property name="text">
@@ -102,6 +102,19 @@
    </property>
    <property name="text">
     <string>TextLabel</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="closeBtn">
+   <property name="geometry">
+    <rect>
+     <x>350</x>
+     <y>240</y>
+     <width>80</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>关 机</string>
    </property>
   </widget>
  </widget>
