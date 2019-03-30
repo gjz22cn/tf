@@ -24,8 +24,8 @@ def camera_unint(camera):
 
 #g_camera = camera_init()
 
-def pic_cap(filename):
-    cmd = 'fswebcam -r 640x480 --no-banner %s'%(filename)
+def pic_cap(idx, filename):
+    cmd = 'fswebcam -d /dev/video%d -r 640x480 --no-banner %s'%(idx, filename)
     os.system(cmd)
 
 
@@ -33,9 +33,11 @@ BUFSIZE = 1024
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 ip_port = ('127.0.0.1', 9999)
 
+idx = 0
+
 while True:
     file_name = '/tmp/cap' + time.strftime("_%Y%m%d%H%M%S", time.localtime()) + '.jpg'
-    pic_cap(file_name)
+    pic_cap(idx%2, file_name)
     #camera_cap(g_camera, file_name)
     '''
     ret, frame = cap.read()
@@ -44,6 +46,7 @@ while True:
 
     cv2.imwrite(file_name, frame)
     '''
+    idx += 1
 
     client.sendto(file_name.encode('utf-8'), ip_port)
     data, server_addr = client.recvfrom(BUFSIZE)
