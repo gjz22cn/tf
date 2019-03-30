@@ -13,7 +13,8 @@ server.bind(ip_port)
 
 result_str = ''
 
-lines = tf.gfile.GFile('./data/output/output_labels.txt').readlines()
+work_dir = '/home/pi/code/tf/img_classify/'
+lines = tf.gfile.GFile(work_dir+'data/output/output_labels.txt').readlines()
 uid_to_human = {}
 for uid, line in enumerate(lines):
     line = line.strip('\n')
@@ -26,7 +27,7 @@ def id_to_string(node_id):
     return uid_to_human[node_id]
 
 
-with tf.gfile.FastGFile('./data/output/output_graph.pb', 'rb') as f:
+with tf.gfile.FastGFile(work_dir+'data/output/output_graph.pb', 'rb') as f:
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
     tf.import_graph_def(graph_def, name='')

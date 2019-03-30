@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Classify_Init
+Type=Application
+Icon=cheese
+Categories=Application;
+StartupNotify=true
+Terminal=false
+Exec=sh /home/pi/code/tf/img_classify/cls_srv_start.sh
