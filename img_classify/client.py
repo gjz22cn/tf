@@ -25,7 +25,8 @@ def camera_unint(camera):
 #g_camera = camera_init()
 
 def pic_cap(idx, filename):
-    cmd = 'fswebcam -d /dev/video%d -r 640x480 --no-banner %s'%(idx, filename)
+    #cmd = 'fswebcam -d /dev/video%d -r 640x480 --no-banner %s'%(idx, filename)
+    cmd = 'raspistill -t 10 -o %s -w 1080 -h 1080'%(filename)
     os.system(cmd)
 
 
@@ -48,15 +49,20 @@ while True:
     '''
     idx += 1
 
+
+    '''
     client.sendto(file_name.encode('utf-8'), ip_port)
     data, server_addr = client.recvfrom(BUFSIZE)
     res = data.decode()
     print('recvfrom ', server_addr, ': ', res, '\n')
+    '''
 
     image = cv2.imread(file_name)
+    '''
     res_array = res.split('\n')
     for i in range(3):
         cv2.putText(image, res_array[i], (50, 50+50*i), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+    '''
     cv2.imshow("Output", image)
 
     key = cv2.waitKey(0)
