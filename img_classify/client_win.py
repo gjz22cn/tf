@@ -28,6 +28,7 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.pin_4 = 25 # GPIO PIN 25
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
+        self.init_gpio()
 
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
@@ -49,6 +50,7 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         #print(filename, ext)
         filename = '/tmp/picture.jpg'
         self.pic_cap(0, filename)
+        #time.sleep(0.5)
 
         res = self.query_srv(filename)
 
@@ -66,7 +68,8 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
     
     def pic_cap(self, idx, filename):
         #cmd = 'fswebcam -d /dev/video%d -r 1080x1080 --no-banner %s'%(idx, filename)
-        cmd = 'raspistill -t 1 -o %s -w 1080 -h 1080'%(filename)
+        #cmd = 'raspistill -t 1 -o %s -w 1080 -h 1080'%(filename)
+        cmd = 'raspistill -t 300 -o %s -w 1080 -h 1080'%(filename)
         os.system(cmd)
 
     def socket_init(self):
