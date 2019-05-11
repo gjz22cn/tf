@@ -8,6 +8,8 @@ import os
 import socket
 import time
 import RPi.GPIO as GPIO
+import picamera
+import _thread
 from PyQt5.QtCore import Qt, pyqtSignal,QCoreApplication
 from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
@@ -31,6 +33,10 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
         self.init_gpio()
+
+        self.camera = picamera.PiCamera()
+        self.camera.resolution = (1080,1080)
+        self.camera.framerate = 60
 
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
@@ -56,13 +62,24 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         GPIO.output(pin, GPIO.LOW)
 
     def do_classify(self):
-        #filename, ext = QFileDialog.getOpenFileName(self, 'open file', '')
-        #print(filename, ext)
         filename = '/tmp/picture.jpg'
         self.pic_cap(0, filename)
-        #time.sleep(0.5)
+        
+        try:
+            _thread.start_new_thread(self.query_srv, (filename,))
+        except:
+            print ("Error: unable to start thread")
 
-        res = self.query_srv(filename)
+        #res = self.query_srv(filename)
+
+        jpg = QtGui.QPixmap(filename).scaled(self.imageLabel.width(), self.imageLabel.height())
+        self.imageLabel.setPixmap(jpg)
+
+        #self.do_action(res)
+
+    def do_action(self, res):
+        print ('res='+res)
+        self.resultLabel.setText("R: " + res)
 
         if res != 'ERROR':
             if res == 'Other':
@@ -71,24 +88,25 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
             else:
                 self.on_gpio(self.pin_3, 2);
                 self.on_gpio(self.pin_4, 2);
-
-        jpg = QtGui.QPixmap(filename).scaled(self.imageLabel.width(), self.imageLabel.height())
-        self.imageLabel.setPixmap(jpg)
-        self.resultLabel.setText("R: " + res)
     
     def pic_cap(self, idx, filename):
         #cmd = 'fswebcam -d /dev/video%d -r 1080x1080 --no-banner %s'%(idx, filename)
-        #cmd = 'raspistill -t 1 -o %s -w 1080 -h 1080'%(filename)
-        cmd = 'raspistill -t 300 -o %s -w 1080 -h 1080'%(filename)
-        os.system(cmd)
+        #cmd = 'raspistill -t 300 -o %s -w 1080 -h 1080'%(filename)
+        #os.system(cmd)
+        #self.camera.start_preview()
+        self.camera.capture(filename)
+        #self.camera.stop_preview()
 
     def socket_init(self):
         client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         return client
 
     def query_srv(self, filename):
+        t1 = time.time()
         self.sock.sendto(filename.encode('utf-8'), self.server)
         data, server_addr = self.sock.recvfrom(1024)
+        t2 = time.time()
+        print ("query time=%ds"%(t2-t1))
         res = data.decode()
         res_array = res.split('\n')
         if len(res_array) < 1:
@@ -97,6 +115,8 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         result = res_array[0].split(' ')
         if len(result) < 1:
             return 'ERROR'
+
+        self.do_action(result[0])
 
         return result[0]
 
