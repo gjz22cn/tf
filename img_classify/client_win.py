@@ -8,7 +8,7 @@ import os
 import socket
 import time
 import RPi.GPIO as GPIO
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal,QCoreApplication
 from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 from Ui_ClassifyForm import Ui_ClassifyForm
@@ -20,25 +20,35 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.setupUi(self)
         self.setWindowFlags(Qt.Qt.CustomizeWindowHint)
         self.classifyBtn.clicked.connect(self.do_classify)
+        self.exitBtn.clicked.connect(QCoreApplication.quit)
         self.closeBtn.clicked.connect(self.do_close)
         
         self.pin_1 = 18 # GPIO PIN 18
         self.pin_2 = 23 # GPIO PIN 23
         self.pin_3 = 24 # GPIO PIN 24
         self.pin_4 = 25 # GPIO PIN 25
+        self.in_1 = 21  # GPIO PIN 40
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
         self.init_gpio()
 
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
-        self.resultLabel.setText("Res:")
+        self.resultLabel.setText("R:")
+
+
+    def door_callback(self, pin):
+        time.sleep(0.01)
+        if GPIO.input(pin):
+            self.do_classify()
 
     def init_gpio(self):
         GPIO.setup(self.pin_1, GPIO.OUT)
         GPIO.setup(self.pin_2, GPIO.OUT)
         GPIO.setup(self.pin_3, GPIO.OUT)
         GPIO.setup(self.pin_4, GPIO.OUT)
+        GPIO.setup(self.in_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(self.in_1, GPIO.RISING, callback=self.door_callback, bouncetime=500)
 
     def on_gpio(self, pin, t_sleep):
         GPIO.output(pin,GPIO.HIGH)
@@ -64,7 +74,7 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
 
         jpg = QtGui.QPixmap(filename).scaled(self.imageLabel.width(), self.imageLabel.height())
         self.imageLabel.setPixmap(jpg)
-        self.resultLabel.setText("Res: " + res)
+        self.resultLabel.setText("R: " + res)
     
     def pic_cap(self, idx, filename):
         #cmd = 'fswebcam -d /dev/video%d -r 1080x1080 --no-banner %s'%(idx, filename)
