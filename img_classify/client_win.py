@@ -32,8 +32,6 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.out_4 = 25
         self.in_1 = 20
         self.in_2 = 21
-        GPIO.setwarnings(False)
-        GPIO.setmode(GPIO.BCM)
         self.init_gpio()
 
         self.camera = picamera.PiCamera()
@@ -43,14 +41,22 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
         self.resultLabel.setText("R:")
+        self.last_time = time.time()
+
 
 
     def door_callback(self, pin):
         time.sleep(0.01)
         if GPIO.input(pin):
-            self.do_classify()
+            now_time = time.time()
+            if (now_time - self.last_time) > 6:
+                print ("%f"%(now_time - self.last_time))
+                self.do_classify()
+                self.last_time = now_time
 
     def init_gpio(self):
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.out_1, GPIO.OUT)
         GPIO.setup(self.out_2, GPIO.OUT)
         GPIO.setup(self.out_3, GPIO.OUT)
@@ -67,7 +73,7 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
 
     def set_gpio(self, pin, v):
         if v:
-            GPIO.output(pin,GPIO.HIGH)
+            GPIO.output(pin, GPIO.HIGH)
         else:
             GPIO.output(pin, GPIO.LOW)
 
