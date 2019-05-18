@@ -25,11 +25,13 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.exitBtn.clicked.connect(QCoreApplication.quit)
         self.closeBtn.clicked.connect(self.do_close)
         
-        self.pin_1 = 18 # GPIO PIN 18
-        self.pin_2 = 23 # GPIO PIN 23
-        self.pin_3 = 24 # GPIO PIN 24
-        self.pin_4 = 25 # GPIO PIN 25
-        self.in_1 = 21  # GPIO PIN 40
+        # BCM 
+        self.out_1 = 18
+        self.out_2 = 23
+        self.out_3 = 24
+        self.out_4 = 25
+        self.in_1 = 20
+        self.in_2 = 21
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
         self.init_gpio()
@@ -49,20 +51,32 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
             self.do_classify()
 
     def init_gpio(self):
-        GPIO.setup(self.pin_1, GPIO.OUT)
-        GPIO.setup(self.pin_2, GPIO.OUT)
-        GPIO.setup(self.pin_3, GPIO.OUT)
-        GPIO.setup(self.pin_4, GPIO.OUT)
+        GPIO.setup(self.out_1, GPIO.OUT)
+        GPIO.setup(self.out_2, GPIO.OUT)
+        GPIO.setup(self.out_3, GPIO.OUT)
+        GPIO.setup(self.out_4, GPIO.OUT)
         GPIO.setup(self.in_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.in_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(self.in_1, GPIO.RISING, callback=self.door_callback, bouncetime=500)
+        GPIO.add_event_detect(self.in_2, GPIO.RISING, callback=self.door_callback, bouncetime=500)
 
     def on_gpio(self, pin, t_sleep):
         GPIO.output(pin,GPIO.HIGH)
         time.sleep(t_sleep)
         GPIO.output(pin, GPIO.LOW)
 
+    def set_gpio(self, pin, v):
+        if v:
+            GPIO.output(pin,GPIO.HIGH)
+        else:
+            GPIO.output(pin, GPIO.LOW)
+
     def do_classify(self):
         filename = '/tmp/picture.jpg'
+        
+        # turn led on
+        self.set_gpio(self.out_4, True)
+
         self.pic_cap(0, filename)
         
         try:
@@ -75,6 +89,9 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         jpg = QtGui.QPixmap(filename).scaled(self.imageLabel.width(), self.imageLabel.height())
         self.imageLabel.setPixmap(jpg)
 
+        # turn led off
+        self.set_gpio(self.out_4, False)
+
         #self.do_action(res)
 
     def do_action(self, res):
@@ -82,12 +99,10 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.resultLabel.setText("R: " + res)
 
         if res != 'ERROR':
-            if res == 'Other':
-                self.on_gpio(self.pin_1, 2);
-                self.on_gpio(self.pin_2, 2);
+            if res == 'trash':
+                self.on_gpio(self.out_1, 2);
             else:
-                self.on_gpio(self.pin_3, 2);
-                self.on_gpio(self.pin_4, 2);
+                self.on_gpio(self.out_2, 2);
     
     def pic_cap(self, idx, filename):
         #cmd = 'fswebcam -d /dev/video%d -r 1080x1080 --no-banner %s'%(idx, filename)
