@@ -105,7 +105,8 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         self.resultLabel.setText("R: " + res)
 
         if res != 'ERROR':
-            if res == 'trash':
+            #if res == 'trash':
+            if res == 'glass' || res == 'metal':
                 self.on_gpio(self.out_1, 2);
             else:
                 self.on_gpio(self.out_2, 2);
