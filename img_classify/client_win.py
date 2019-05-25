@@ -36,23 +36,38 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
 
         self.camera = picamera.PiCamera()
         self.camera.resolution = (1080,1080)
-        self.camera.framerate = 60
+        self.camera.framerate = 30
 
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
         self.resultLabel.setText("R:")
         self.last_time = time.time()
+        self.cnt = 0
 
+
+    def door_check(self, pin):
+        time.sleep(1)
+        now_time = time.time()
+        if (now_time - self.last_time) >= 1:
+            if GPIO.input(pin):
+                self.cnt += 1
+                print ("do_classify cnr=%d"%(self.cnt))
+                self.do_classify()
+                
+                # turn led off
+                self.set_gpio(self.out_4, False)
 
 
     def door_callback(self, pin):
-        time.sleep(0.01)
-        if GPIO.input(pin):
-            now_time = time.time()
-            if (now_time - self.last_time) > 6:
-                print ("%f"%(now_time - self.last_time))
-                self.do_classify()
-                self.last_time = now_time
+        # turn led on
+        self.set_gpio(self.out_4, True)
+
+        self.last_time = time.time()
+        try:
+            _thread.start_new_thread(self.door_check, (pin,))
+        except:
+            print ("Error: unable to start door check thread")
+
 
     def init_gpio(self):
         GPIO.setwarnings(False)
@@ -66,10 +81,12 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         GPIO.add_event_detect(self.in_1, GPIO.RISING, callback=self.door_callback, bouncetime=500)
         GPIO.add_event_detect(self.in_2, GPIO.RISING, callback=self.door_callback, bouncetime=500)
 
+
     def on_gpio(self, pin, t_sleep):
         GPIO.output(pin,GPIO.HIGH)
         time.sleep(t_sleep)
         GPIO.output(pin, GPIO.LOW)
+
 
     def set_gpio(self, pin, v):
         if v:
@@ -77,12 +94,10 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         else:
             GPIO.output(pin, GPIO.LOW)
 
+
     def do_classify(self):
         filename = '/tmp/picture.jpg'
         
-        # turn led on
-        self.set_gpio(self.out_4, True)
-
         self.pic_cap(0, filename)
         
         try:
@@ -90,15 +105,9 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         except:
             print ("Error: unable to start thread")
 
-        #res = self.query_srv(filename)
-
         jpg = QtGui.QPixmap(filename).scaled(self.imageLabel.width(), self.imageLabel.height())
         self.imageLabel.setPixmap(jpg)
 
-        # turn led off
-        self.set_gpio(self.out_4, False)
-
-        #self.do_action(res)
 
     def do_action(self, res):
         print ('res='+res)
@@ -106,7 +115,7 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
 
         if res != 'ERROR':
             #if res == 'trash':
-            if res == 'glass' || res == 'metal':
+            if res == 'glass' or res == 'metal':
                 self.on_gpio(self.out_1, 2);
             else:
                 self.on_gpio(self.out_2, 2);
