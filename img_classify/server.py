@@ -37,21 +37,21 @@ with tf.Session() as sess:
     while True:
         data, client_addr = server.recvfrom(BUFSIZE)
         jpg_file = data.decode()
-        print('server recv:', jpg_file)
+        #print('server recv:', jpg_file)
 
         image_data = tf.gfile.FastGFile(jpg_file, 'rb').read()
         predictions = sess.run(softmax_tensor, {'DecodeJpeg/contents:0': image_data})
         predictions = np.squeeze(predictions)
 
         top_k = predictions.argsort()[::-1]
-        print(top_k)
+        #print(top_k)
         #result_str = jpg_file
         result_str = ''
         for node_id in top_k:
             human_string = id_to_string(node_id)
             score = predictions[node_id]
             r_i = '%s (score = %.5f)' % (human_string, score)
-            print(r_i)
+            #print(r_i)
             if result_str == '':
                 result_str = r_i
             else:
