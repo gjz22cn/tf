@@ -6,6 +6,7 @@ import time
 import RPi.GPIO as GPIO
 import picamera
 import _thread
+import cv2
 
 
 class TrashClassify():
@@ -84,6 +85,9 @@ class TrashClassify():
     def do_classify(self):
         filename = '/tmp/picture.jpg'
         self.pic_cap(0, filename)
+        img=cv2.imread(filename,1)
+        dst=cv2.resize(img,(299,299))
+        cv2.imwrite(filename, dst)
         
         try:
             _thread.start_new_thread(self.query_srv, (filename,))
