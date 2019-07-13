@@ -12,10 +12,11 @@ import cv2
 class TrashClassify():
     def __init__(self):
         # BCM 
-        self.out_1 = 18
-        self.out_2 = 23
-        self.out_3 = 24
-        self.out_4 = 25
+        self.IN1 = 18
+        self.IN2 = 23
+        self.ENA1 = 24
+        self.led = 25
+        self.out_5 = 16
         self.in_1 = 20
         self.in_2 = 21
         self.init_gpio()
@@ -43,7 +44,7 @@ class TrashClassify():
                 self.do_classify()
                 
                 # turn led off
-                self.set_gpio(self.out_4, False)
+                self.set_gpio(self.led, False)
         '''
         if GPIO.input(pin):
             self.cnt += 1
@@ -56,7 +57,7 @@ class TrashClassify():
 
     def door_callback(self, pin):
         # turn led on
-        self.set_gpio(self.out_4, True)
+        self.set_gpio(self.led, True)
 
         self.last_time = time.time()
         try:
@@ -68,10 +69,12 @@ class TrashClassify():
     def init_gpio(self):
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.out_1, GPIO.OUT)
-        GPIO.setup(self.out_2, GPIO.OUT)
-        GPIO.setup(self.out_3, GPIO.OUT)
-        GPIO.setup(self.out_4, GPIO.OUT)
+        GPIO.setup(self.IN1, GPIO.OUT)
+        GPIO.setup(self.IN2, GPIO.OUT)
+        GPIO.setup(self.ENA1, GPIO.OUT, initial=GPIO.LOW)
+        self.pwm1=GPIO.PWM(self.ENA1, 200)
+        self.pwm1.start(40)
+        GPIO.setup(self.led, GPIO.OUT)
         GPIO.setup(self.in_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         #GPIO.setup(self.in_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(self.in_1, GPIO.RISING, callback=self.door_callback, bouncetime=500)
@@ -89,6 +92,30 @@ class TrashClassify():
             GPIO.output(pin, GPIO.HIGH)
         else:
             GPIO.output(pin, GPIO.LOW)
+
+    def dianji1_suspended(self):
+        GPIO.output(self.IN1, GPIO.HIGH)
+        GPIO.output(self.IN2, GPIO.HIGH)
+
+    def dianji1_brake(self):
+        GPIO.output(self.IN1, GPIO.LOW)
+        GPIO.output(self.IN2, GPIO.LOW)
+
+    def dianji1_go(self):
+        time.sleep(0.2)
+        GPIO.output(self.IN1, GPIO.HIGH)
+        GPIO.output(self.IN2, GPIO.LOW)
+        time.sleep(2)
+        self.dianji1_brake()
+        #self.on_gpio(self.IN1, 2)
+
+    def dianji1_back(self):
+        time.sleep(0.2)
+        GPIO.output(self.IN1, GPIO.LOW)
+        GPIO.output(self.IN2, GPIO.HIGH)
+        time.sleep(t_sleep)
+        self.dianji1_brake()
+        #self.on_gpio(self.IN2, 2)
 
 
     def do_classify(self):
@@ -108,11 +135,11 @@ class TrashClassify():
         print ('res='+res)
         if res != 'ERROR':
             self.start_report_result(res+'-picture.jpg')
-            #if res == 'trash':
-            if res == 'glass' or res == 'metal':
-                self.on_gpio(self.out_1, 2);
+            #if res == 'glass' or res == 'metal':
+            if res == 'trash':
+                self.dianji1_go()
             else:
-                self.on_gpio(self.out_2, 2);
+                self.dianji1_brake()
     
     def pic_cap(self, idx, filename):
         #cmd = 'fswebcam -d /dev/video%d -r 1080x1080 --no-banner %s'%(idx, filename)
