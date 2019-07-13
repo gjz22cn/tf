@@ -33,6 +33,7 @@ class TrashClassify():
 
 
     def door_check(self, pin):
+        '''
         time.sleep(1)
         now_time = time.time()
         if (now_time - self.last_time) >= 1:
@@ -43,6 +44,14 @@ class TrashClassify():
                 
                 # turn led off
                 self.set_gpio(self.out_4, False)
+        '''
+        if GPIO.input(pin):
+            self.cnt += 1
+            print ("do_classify cnr=%d"%(self.cnt))
+            self.do_classify()
+                
+            # turn led off
+            self.set_gpio(self.out_4, False)
 
 
     def door_callback(self, pin):
@@ -64,9 +73,9 @@ class TrashClassify():
         GPIO.setup(self.out_3, GPIO.OUT)
         GPIO.setup(self.out_4, GPIO.OUT)
         GPIO.setup(self.in_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.in_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        #GPIO.setup(self.in_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(self.in_1, GPIO.RISING, callback=self.door_callback, bouncetime=500)
-        GPIO.add_event_detect(self.in_2, GPIO.RISING, callback=self.door_callback, bouncetime=500)
+        #GPIO.add_event_detect(self.in_2, GPIO.RISING, callback=self.door_callback, bouncetime=500)
 
 
     def on_gpio(self, pin, t_sleep):
