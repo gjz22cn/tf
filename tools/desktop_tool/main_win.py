@@ -75,7 +75,7 @@ class ClassifyWindow(QWidget, Ui_ClassifyForm):
         jpg = photo.scaled(self.imageLabel.width(), self.imageLabel.height())
         self.imageLabel.setPixmap(jpg)
 
-        dir_path = os.path.join(self.imgPath, label)
+        dir_path = Path(os.path.join(self.imgPath, label))
         if not dir_path.is_dir():
             os.makedirs(dir_path)
 
