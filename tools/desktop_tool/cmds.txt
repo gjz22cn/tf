@@ -1,0 +1,4 @@
+pyinstaller --console --onefile main_win.py
+
+
+G:\project\trash_classify
