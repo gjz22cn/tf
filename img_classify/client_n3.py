@@ -30,23 +30,32 @@ class TrashClassify():
         self.trash = ['baozhuangsuliaodai', 'feizhi', 'peel', 'suliaobei', 'xiaomubang', 'xiguan', 'zhibei']
         self.recyclable = ['carboard', 'metal', 'plastic', 'paper', 'glass']
         self.dianji_state = 'brake' 
+        self.p_state = 0
         self.path_init()
         self.init_gpio()
 
         self.camera = picamera.PiCamera()
         self.camera.resolution = (1080,1080)
         self.camera.framerate = 30
-
+        self.last_time = time.time()
+        
         self.server = ('127.0.0.1', 9999)
         self.sock = self.socket_init()
-        self.last_time = time.time()
         self.res_srv = ('10.10.10.10', 6666)
         self.res_sock = self.socket_init()
-        self.cnt = 0;
-        #time.sleep(300)
-        self.do_classify()
+        self.cnt = 0
+        self.init_wait_srv_ready()
+        #time.sleep(180)
+        #self.do_classify()
         #self.dianji1_right()
         #self.dianji1_left()
+
+    def init_wait_srv_ready(self):
+        if os.path.exists('/tmp/srv_ready'):
+            self.do_classify()
+        else:
+            time.sleep(5)
+            self.init_wait_srv_ready()
 
     def path_init(self):
         if not os.path.exists(self.root_dir):
@@ -121,21 +130,24 @@ class TrashClassify():
 
     def p_callback(self, pin):
         if (pin == self.P_IN_LEFT) and (GPIO.input(5) == 0):
+            self.p_state = 1
             if self.dianji_state != 'right':
                 self.dianji_action(1, 'brake')
                 time.sleep(0.2)
                 self.dianji_action(1, 'right')
         
         if (pin == self.P_IN_RIGHT) and (GPIO.input(6) == 0):
+            self.p_state = 1
             if self.dianji_state != 'left':
                 self.dianji_action(1, 'brake')
                 time.sleep(0.2)
                 self.dianji_action(1, 'left')
 
         if (pin == self.P_IN_MID) and (GPIO.input(13) == 0):
-            if self.dianji_state != 'brake':
+            if self.p_state == 1:
                 self.dianji_action(1, 'brake')
                 self.do_classify()
+                self.p_state = 0
 
 
     def init_gpio(self):
