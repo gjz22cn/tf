@@ -1,64 +1,105 @@
-# coding: utf-8
-import tensorflow as tf
-import os
+# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""label_image for tflite."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import argparse
 import numpy as np
-import re
-import gc
+import datetime
+import os
+
+from PIL import Image
+
+from tensorflow.lite.python.interpreter import Interpreter
 
 import socket
 BUFSIZE = 1024
 ip_port = ('127.0.0.1', 9999)
-server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server.bind(ip_port)
+model_file='/home/pi/code/tf/img_classify/data/mnet1/mnet1.tflite'
+label_file='/home/pi/code/tf/img_classify/data/mnet1/labels.txt'
 
-result_str = ''
-
-work_dir = '/home/pi/code/tf/img_classify/'
-lines = tf.gfile.GFile(work_dir+'data/output/output_labels.txt').readlines()
-uid_to_human = {}
-for uid, line in enumerate(lines):
-    line = line.strip('\n')
-    uid_to_human[uid] = line
+def load_labels(filename):
+  with open(filename, 'r') as f:
+    return [line.strip() for line in f.readlines()]
 
 
-def id_to_string(node_id):
-    if node_id not in uid_to_human:
-        return ''
-    return uid_to_human[node_id]
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--input_mean', default=127.5, help='input_mean')
+  parser.add_argument(
+      '--input_std', default=127.5, help='input standard deviation')
+  args = parser.parse_args()
 
+  #server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  #server.bind(ip_port)
 
-with tf.gfile.FastGFile(work_dir+'data/output/output_graph.pb', 'rb') as f:
-    graph_def = tf.GraphDef()
-    graph_def.ParseFromString(f.read())
-    tf.import_graph_def(graph_def, name='')
-with tf.Session() as sess:
-    softmax_tensor = sess.graph.get_tensor_by_name('final_result:0')
+  interpreter = Interpreter(model_path=model_file)
+  interpreter.allocate_tensors()
 
-    while True:
-        data, client_addr = server.recvfrom(BUFSIZE)
-        jpg_file = data.decode()
-        #print('server recv:', jpg_file)
+  input_details = interpreter.get_input_details()
+  output_details = interpreter.get_output_details()
 
-        image_data = tf.gfile.FastGFile(jpg_file, 'rb').read()
-        predictions = sess.run(softmax_tensor, {'DecodeJpeg/contents:0': image_data})
-        predictions = np.squeeze(predictions)
+  # check the type of the input tensor
+  floating_model = input_details[0]['dtype'] == np.float32
 
-        top_k = predictions.argsort()[::-1]
-        #print(top_k)
-        #result_str = jpg_file
-        result_str = ''
-        for node_id in top_k:
-            human_string = id_to_string(node_id)
-            score = predictions[node_id]
-            r_i = '%s (score = %.5f)' % (human_string, score)
-            #print(r_i)
-            if result_str == '':
-                result_str = r_i
-            else:
-                result_str = result_str + '\n' + r_i
+  # NxHxWxC, H:1, W:2
+  height = input_details[0]['shape'][1]
+  width = input_details[0]['shape'][2]
+  
+  server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  server.bind(ip_port)
 
-        server.sendto(result_str.encode(), client_addr)
-        del image_data
-        gc.collect()
+  os.system("echo 1 > /tmp/srv_ready")
 
-    server.close()
+  while True:
+      data, client_addr = server.recvfrom(BUFSIZE)
+      jpg_file = data.decode()
+      img = Image.open(jpg_file).resize((width, height))
+
+      # add N dim
+      input_data = np.expand_dims(img, axis=0)
+
+      if floating_model:
+        input_data = (np.float32(input_data) - args.input_mean) / args.input_std
+
+      interpreter.set_tensor(input_details[0]['index'], input_data)
+
+      t1 = datetime.datetime.now()
+      interpreter.invoke()
+
+      output_data = interpreter.get_tensor(output_details[0]['index'])
+      results = np.squeeze(output_data)
+      t2 = datetime.datetime.now()
+      k = t2 - t1
+      print (k.total_seconds())
+
+      top_k = results.argsort()[-5:][::-1]
+      labels = load_labels(label_file)
+      result_str = ''
+      for i in top_k:
+        if floating_model:
+          print('{:08.6f}: {}'.format(float(results[i]), labels[i]))
+        else:
+          print('{:08.6f}: {}'.format(float(results[i] / 255.0), labels[i]))
+        
+        if result_str == '':
+          result_str = labels[i]
+        else:
+          result_str = result_str + '\n' + labels[i]
+
+      server.sendto(result_str.encode(), client_addr)
