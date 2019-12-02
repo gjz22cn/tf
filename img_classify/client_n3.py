@@ -44,11 +44,28 @@ class TrashClassify():
         self.res_srv = ('10.10.10.10', 6666)
         self.res_sock = self.socket_init()
         self.cnt = 0
-        self.init_wait_srv_ready()
+        if self.checkHW():
+            self.init_wait_srv_ready()
         #time.sleep(180)
         #self.do_classify()
         #self.dianji1_right()
         #self.dianji1_left()
+
+    def getMAC(self, interface='eth0'):
+        try:
+            str = open('/sys/class/net/%s/address'%interface).read()
+        except:
+            str = "00:00:00:00:00:00"
+
+        return str[0:17]
+
+    def checkHW(self):
+        mac = self.getMAC('eth0')
+
+        if mac == "b8:27:eb:ba:49:ce":
+            return True
+        else:
+            return False
 
     def init_wait_srv_ready(self):
         if os.path.exists('/tmp/srv_ready'):
@@ -279,11 +296,13 @@ class TrashClassify():
         print ('res='+res)
         if res != 'ERROR':
             self.start_report_result(res+'-picture.jpg')
-            self.store_img('/tmp/picture.jpg', res)
             #if res == 'glass' or res == 'metal':
             if res == 'none':
+                self.do_classify()
                 return
-            elif res in self.trash:
+
+            self.store_img('/tmp/picture.jpg', res)
+            if res in self.trash:
                 self.dianji_action(1, 'left')
             else:
                 self.dianji_action(1, 'right')
